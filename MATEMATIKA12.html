@@ -349,8 +349,31 @@ window.location.href=
 
 }
 
+/* ================= LONG PRESS DETECT ================= */
+
+let pressTimer;
+
+document.addEventListener("touchstart",function(){
+
+if(!started)return;
+
+pressTimer=setTimeout(function(){
+
+triggerViolation("Terdeteksi percobaan memilih teks / long press");
+
+},700);
+
+});
+
+document.addEventListener("touchend",function(){
+
+clearTimeout(pressTimer);
+
+});
+  
 </script>
 
 </body>
 
 </html>
+
