@@ -366,9 +366,11 @@ triggerViolation("Terdeteksi percobaan memilih teks / long press");
 });
 
 document.addEventListener("touchend",function(){
-
 clearTimeout(pressTimer);
+});
 
+document.addEventListener("touchmove",function(){
+clearTimeout(pressTimer);
 });
   
 </script>
@@ -376,4 +378,5 @@ clearTimeout(pressTimer);
 </body>
 
 </html>
+
 
