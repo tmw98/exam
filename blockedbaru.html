@@ -1,0 +1,52 @@
+<script>
+
+// Ambil parameter mapel
+const urlParams = new URLSearchParams(window.location.search);
+const subjectKey = urlParams.get("mapel");
+
+// ambil prefix folder (sama seperti di KODE.html)
+const STORAGE_PREFIX = location.pathname.split("/")[1] || "root";
+const storageKey = STORAGE_PREFIX + "_" + subjectKey;
+
+const container = document.getElementById("logContainer");
+const summaryBox = document.getElementById("summaryBox");
+
+if(!subjectKey){
+
+summaryBox.innerHTML="Mapel tidak terdeteksi.";
+
+}else{
+
+let logData = JSON.parse(localStorage.getItem(storageKey+"_log") || "[]");
+let violation = localStorage.getItem(storageKey+"_v") || 0;
+
+summaryBox.innerHTML = `
+Mapel: <strong>${subjectKey}</strong><br>
+Total Pelanggaran: <strong>${violation}</strong><br>
+Batas Maksimal: <strong>3</strong>
+`;
+
+if(logData.length===0){
+
+container.innerHTML="<p>Tidak ada data aktivitas yang tercatat.</p>";
+
+}else{
+
+logData.slice(-10).forEach((item,index)=>{
+
+container.innerHTML += `
+<div class="logItem">
+<strong>Pelanggaran ${index+1}</strong><br>
+🕒 Waktu: ${item.time}<br>
+📌 Aktivitas: ${item.reason}<br>
+⏳ Durasi: ${item.duration ? item.duration+" detik" : "-"}
+</div>
+`;
+
+});
+
+}
+
+}
+
+</script>

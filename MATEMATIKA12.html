@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>iWrapper Ujian</title>
+
+<style>
+
+body{
+margin:0;
+font-family:'Segoe UI', Arial, sans-serif;
+background:linear-gradient(135deg,#1e3c72,#2a5298);
+}
+
+/* CARD */
+
+.card{
+background:white;
+width:100%;
+max-width:500px;
+padding:25px;
+border-radius:14px;
+box-shadow:0 12px 35px rgba(0,0,0,0.25);
+text-align:center;
+animation:fadeIn 0.35s ease-out;
+}
+
+@keyframes fadeIn{
+from{opacity:0;transform:translateY(10px);}
+to{opacity:1;transform:translateY(0);}
+}
+
+.overlay{
+position:fixed;
+inset:0;
+display:flex;
+justify-content:center;
+align-items:center;
+padding:20px;
+z-index:9999;
+}
+
+.warning-bg{
+background:rgba(0,0,0,0.6);
+}
+
+iframe{
+width:100%;
+height:100vh;
+border:none;
+}
+
+h2{
+margin-top:0;
+color:#1e3c72;
+}
+
+.checklist{
+text-align:left;
+margin-top:15px;
+}
+
+.checklist label{
+display:block;
+margin-bottom:12px;
+font-size:14px;
+}
+
+.info-box{
+background:#f0f4ff;
+padding:12px;
+border-radius:8px;
+font-size:14px;
+margin-top:15px;
+text-align:left;
+}
+
+button{
+padding:12px 25px;
+margin-top:20px;
+font-size:15px;
+border:none;
+border-radius:6px;
+cursor:pointer;
+background:#1e3c72;
+color:white;
+}
+
+button:disabled{
+background:#999;
+cursor:not-allowed;
+}
+
+.warning-card{
+background:#fff3f3;
+border-left:5px solid red;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- PERSIAPAN -->
+
+<div id="prepOverlay" class="overlay">
+
+<div class="card">
+
+<h2>📝 Persiapan Sebelum Ujian</h2>
+
+<div class="info-box">
+Pastikan Anda sudah menerima <b>Nomor Peserta</b> dari sekolah sebelum memulai ujian.
+</div>
+
+<div class="checklist">
+
+<label><input type="checkbox" class="prepCheck"> Matikan notifikasi aplikasi</label>
+<label><input type="checkbox" class="prepCheck"> Aktifkan mode Jangan Ganggu</label>
+<label><input type="checkbox" class="prepCheck"> Atur durasi layar minimal 30 menit</label>
+<label><input type="checkbox" class="prepCheck"> Matikan rotasi layar otomatis</label>
+<label><input type="checkbox" class="prepCheck"> Jangan membuka aplikasi lain</label>
+
+</div>
+
+<button id="startBtn" disabled>🚀 Mulai Ujian</button>
+
+</div>
+
+</div>
+
+<!-- WARNING -->
+
+<div id="warningOverlay" class="overlay warning-bg" style="display:none;">
+
+<div class="card warning-card">
+
+<h3>Peringatan Sistem</h3>
+
+<p id="warningText"></p>
+
+<p>Sisa kesempatan: <strong><span id="chanceLeft"></span></strong></p>
+
+<button onclick="closeWarning()">Lanjutkan</button>
+
+</div>
+
+</div>
+
+<!-- FORM -->
+
+<iframe id="examFrame"></iframe>
+
+<script>
+
+/* ================= CONFIG ================= */
+
+const FORM_URL="https://docs.google.com/forms/d/e/1FAIpQLSfvQq5puwXDuEl6Ij1KRb-VDV5sYp7RNKJfb1HHLLmMGtHm-g/viewform";
+const SUBJECT_CODE="BINGGRIS10";
+const MAX_VIOLATION=3;
+
+/* ================= STORAGE PREFIX ================= */
+
+const STORAGE_PREFIX=location.pathname.split("/")[1]||"root";
+const storageKey=STORAGE_PREFIX+"_"+SUBJECT_CODE;
+
+/* ================= STATE ================= */
+
+let violation=parseInt(localStorage.getItem(storageKey+"_v")||"0");
+let logData=JSON.parse(localStorage.getItem(storageKey+"_log")||"[]");
+
+let started=false;
+let leaveTime=null;
+let graceUsed=false;
+let initialWidth=null;
+
+/* ================= CHECKLIST ================= */
+
+const checks=document.querySelectorAll(".prepCheck");
+const startBtn=document.getElementById("startBtn");
+
+checks.forEach(c=>{
+c.addEventListener("change",()=>{
+startBtn.disabled=!([...checks].every(x=>x.checked));
+});
+});
+
+/* ================= LOG ================= */
+
+function addLog(reason,duration=0){
+
+const now=new Date();
+
+logData.push({
+time:now.toLocaleString(),
+reason:reason,
+duration:duration
+});
+
+if(logData.length>50){
+logData.shift();
+}
+
+localStorage.setItem(storageKey+"_log",JSON.stringify(logData));
+
+}
+
+/* ================= SAVE VIOLATION ================= */
+
+function saveViolation(){
+
+localStorage.setItem(storageKey+"_v",violation);
+
+if(violation>=MAX_VIOLATION){
+
+localStorage.setItem(storageKey+"_blocked","1");
+
+window.location.href=
+"./blockedbaru.html?mapel="+encodeURIComponent(SUBJECT_CODE);
+
+}
+
+}
+
+/* ================= WARNING ================= */
+
+function showWarning(msg){
+
+document.getElementById("warningText").innerText=msg;
+
+document.getElementById("chanceLeft").innerText=
+MAX_VIOLATION-violation;
+
+document.getElementById("warningOverlay").style.display="flex";
+
+}
+
+function triggerViolation(reason,duration=0){
+
+violation++;
+
+addLog(reason,duration);
+
+saveViolation();
+
+if(violation<MAX_VIOLATION){
+showWarning(reason);
+}
+
+}
+
+function closeWarning(){
+
+document.getElementById("warningOverlay").style.display="none";
+
+}
+
+/* ================= START ================= */
+
+startBtn.onclick=function(){
+
+document.getElementById("prepOverlay").style.display="none";
+
+document.getElementById("examFrame").src=FORM_URL;
+
+started=true;
+
+localStorage.setItem(storageKey+"_started","1");
+
+initialWidth=window.innerWidth;
+
+};
+
+/* ================= RELOAD SAFE ================= */
+
+if(localStorage.getItem(storageKey+"_started")==="1"
+&&localStorage.getItem(storageKey+"_blocked")!=="1"){
+
+document.getElementById("prepOverlay").style.display="none";
+
+document.getElementById("examFrame").src=FORM_URL;
+
+started=true;
+
+initialWidth=window.innerWidth;
+
+}
+
+/* ================= TAB SWITCH ================= */
+
+document.addEventListener("visibilitychange",function(){
+
+if(!started)return;
+
+if(document.hidden){
+
+leaveTime=Date.now();
+
+}else if(leaveTime){
+
+let diff=(Date.now()-leaveTime)/1000;
+
+if(!graceUsed && diff<4){
+graceUsed=true;
+leaveTime=null;
+return;
+}
+
+if(diff>7){
+
+triggerViolation(
+"Keluar dari halaman selama "+Math.round(diff)+" detik",
+Math.round(diff)
+);
+
+}
+
+leaveTime=null;
+
+}
+
+});
+
+/* ================= SPLIT SCREEN ================= */
+
+window.addEventListener("resize",function(){
+
+if(!started)return;
+
+if(Math.abs(window.innerWidth-initialWidth)>220){
+
+triggerViolation("Terdeteksi kemungkinan split screen");
+
+}
+
+});
+
+/* ================= BLOCK RIGHT CLICK ================= */
+
+document.addEventListener("contextmenu",e=>e.preventDefault());
+
+/* ================= BLOCK CHECK ================= */
+
+if(localStorage.getItem(storageKey+"_blocked")==="1"){
+
+window.location.href=
+"./blockedbaru.html?mapel="+encodeURIComponent(SUBJECT_CODE);
+
+}
+
+</script>
+
+</body>
+</html>
