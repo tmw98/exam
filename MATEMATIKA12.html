@@ -13,6 +13,15 @@ font-family:'Segoe UI', Arial, sans-serif;
 background:linear-gradient(135deg,#1e3c72,#2a5298);
 }
 
+/* ================= BLOCK TEXT SELECTION ================= */
+/* mencegah highlight sehingga Google search popup tidak muncul */
+
+*{
+-webkit-user-select:none;
+user-select:none;
+-webkit-touch-callout:none;
+}
+
 /* CARD */
 
 .card{
@@ -378,5 +387,6 @@ clearTimeout(pressTimer);
 </body>
 
 </html>
+
 
 
